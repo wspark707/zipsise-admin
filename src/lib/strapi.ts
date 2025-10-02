@@ -1,5 +1,5 @@
 // src/lib/strapi.ts
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'https://api.zipsise.com';
 const STRAPI_API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL || 'https://api.zipsise.com/api';
@@ -155,6 +155,7 @@ export const strapiClient = {
     collection: string,
     data: Partial<T>
   ): Promise<StrapiResponse<T>> {
+    // 🔥 핵심: data를 data 객체로 감싸서 전송
     const response = await strapiAPI.post(`/${collection}`, { data });
     return response.data;
   },
@@ -165,8 +166,29 @@ export const strapiClient = {
     documentId: string,
     data: Partial<T>
   ): Promise<StrapiResponse<T>> {
-    const response = await strapiAPI.put(`/${collection}/${documentId}`, { data });
-    return response.data;
+    try {
+      console.log('=== Strapi Update Request ===');
+      console.log('Collection:', collection);
+      console.log('Document ID:', documentId);
+      console.log('Data to send:', data);
+      
+      // 🔥 핵심: data를 data 객체로 감싸서 전송
+      const payload = { data };
+      console.log('Final payload:', JSON.stringify(payload, null, 2));
+      
+      const response = await strapiAPI.put(`/${collection}/${documentId}`, payload);
+      
+      console.log('Response:', response.data);
+      console.log('=== Update Success ===');
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('=== Strapi Update Error ===');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.message);
+      throw error;
+    }
   },
 
   // DELETE - 문서 삭제 (documentId 사용)
