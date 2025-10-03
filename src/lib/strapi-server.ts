@@ -1,7 +1,7 @@
 // path: src/lib/strapi-server.ts
 import "server-only";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/server-auth-options";
+import { authOptions } from "./server-auth-options";
 
 const API = process.env.NEXT_PUBLIC_STRAPI_API_URL!;
 const READONLY = process.env.STRAPI_REST_READONLY_API_KEY || "";
