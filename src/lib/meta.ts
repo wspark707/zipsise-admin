@@ -1,5 +1,5 @@
 // path: src/lib/meta.ts
-import { apiGet } from "@/lib/strapi-client";
+import { sGet } from "@/lib/strapi-server";  // ← 변경
 
 export type FieldSchema = {
   type: string;
@@ -12,20 +12,18 @@ export type FieldSchema = {
 };
 
 export type CollectionMeta = {
-  uid: string;              // "api::brand.brand"
-  apiName: string;          // "brand"
-  collectionName: string;   // table
+  uid: string;
+  apiName: string;
+  collectionName: string;
   info?: { displayName?: string; description?: string };
   attributes: Record<string, FieldSchema>;
 };
 
 export async function fetchAllCollections(): Promise<CollectionMeta[]> {
-  const res = await apiGet<{ data: CollectionMeta[] }>("/meta/content-types");
-  // 정렬: displayName 기준
+  const res = await sGet<{ data: CollectionMeta[] }>("/meta/content-types");
   return (res.data || []).sort((a, b) => (a.info?.displayName ?? a.apiName).localeCompare(b.info?.displayName ?? b.apiName));
 }
 
-// 라벨 표기
 export function labelOf(c: CollectionMeta) {
   return c.info?.displayName || c.apiName;
 }
