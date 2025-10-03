@@ -119,7 +119,26 @@ export default function GenericForm({ config, documentId, mode }: GenericFormPro
           description: `${config.displayName}이(가) 생성되었습니다.`,
         });
       } else if (documentId) {
-        await strapiClient.updateDocument(config.name, documentId, formData);
+        // 🔥 핵심 수정: 시스템 필드 제외하고 전송
+        const updateData: Record<string, any> = {};
+        
+        // 제외할 시스템 필드 목록
+        const systemFields = ['id', 'documentId', 'createdAt', 'updatedAt', 'publishedAt', 'locale'];
+        
+        config.fields.forEach(field => {
+          // showInForm이 true이고, 시스템 필드가 아니며, 값이 있는 경우만 포함
+          if (
+            field.showInForm && 
+            !systemFields.includes(field.name) && 
+            formData[field.name] !== undefined
+          ) {
+            updateData[field.name] = formData[field.name];
+          }
+        });
+
+        console.log('Update data to send:', updateData);
+        
+        await strapiClient.updateDocument(config.name, documentId, updateData);
         toast({
           title: '성공',
           description: `${config.displayName}이(가) 수정되었습니다.`,
