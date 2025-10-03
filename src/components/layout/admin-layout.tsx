@@ -7,21 +7,20 @@ import { usePathname } from 'next/navigation';
 import {
   Building2,
   Home,
-  Users,
-  FileText,
+  TrendingUp,
+  MapPin,
+  DollarSign,
+  Map,
+  School,
+  Warehouse,
   Settings,
   Menu,
   X,
   LogOut,
   ChevronDown,
+  ChevronRight,
   Bell,
   Search,
-  TrendingUp,      // 추가
-  DollarSign,      // 추가
-  Map,             // 추가
-  MapPin,          // 추가
-  Warehouse,       // 추가
-  School,          // 추가
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -36,25 +35,59 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-interface MenuItem {
+interface SubMenuItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+}
+
+interface MenuItem {
+  label: string;
+  href?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  subItems?: SubMenuItem[];
   badge?: string;
 }
 
 const menuItems: MenuItem[] = [
-  { label: '대시보드', href: '/', icon: Home },
-  { label: '아파트 목록', href: '/cm-apt-lists', icon: Building2 },
-  { label: '아파트 에너지', href: '/cm-apt-energies', icon: TrendingUp },
-  { label: '아파트 매매', href: '/cm-trade-sales-apts', icon: DollarSign },
-  { label: '아파트 전월세', href: '/cm-trade-rent-apts', icon: Home },
-  { label: '시도 관리', href: '/cm-region-sidos', icon: Map },
-  { label: '시군구 관리', href: '/cm-region-sggs', icon: MapPin },
-  { label: 'PNU 건물', href: '/cm-pnu-buildings', icon: Warehouse },
-  { label: '학교 정보', href: '/cm-school-infos', icon: School },
-  { label: '설정', href: '/settings', icon: Settings },
+  { 
+    label: '대시보드', 
+    href: '/', 
+    icon: Home 
+  },
+  {
+    label: '부동산 관리',
+    icon: Building2,
+    subItems: [
+      { label: '아파트 목록', href: '/cm-apt-lists', icon: Building2 },
+      { label: '아파트 에너지', href: '/cm-apt-energies', icon: TrendingUp },
+      { label: 'PNU 건물', href: '/cm-pnu-buildings', icon: Warehouse },
+      { label: '학교 정보', href: '/cm-school-infos', icon: School },
+    ],
+  },
+  {
+    label: '거래 정보',
+    icon: DollarSign,
+    subItems: [
+      { label: '아파트 매매', href: '/cm-trade-sales-apts', icon: DollarSign },
+      { label: '아파트 전월세', href: '/cm-trade-rent-apts', icon: Home },
+    ],
+  },
+  {
+    label: '지역 정보',
+    icon: MapPin,
+    subItems: [
+      { label: '시도 관리', href: '/cm-region-sidos', icon: Map },
+      { label: '시군구 관리', href: '/cm-region-sggs', icon: MapPin },
+    ],
+  },
+  { 
+    label: '설정', 
+    href: '/settings', 
+    icon: Settings 
+  },
 ];
+
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
@@ -63,9 +96,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/login' });
+  };
+
+  const toggleMenu = (label: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(label) 
+        ? prev.filter(item => item !== label)
+        : [...prev, label]
+    );
+  };
+
+  const isMenuExpanded = (label: string) => expandedMenus.includes(label);
+
+  const isSubItemActive = (subItems?: SubMenuItem[]) => {
+    if (!subItems) return false;
+    return subItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'));
   };
 
   return (
@@ -73,7 +122,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* 사이드바 - 데스크톱 */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-200 ease-in-out',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-200 ease-in-out overflow-y-auto',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -102,12 +151,70 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="flex-1 px-4 py-6 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            const isExpanded = isMenuExpanded(item.label);
+            const isActive = item.href ? pathname === item.href : isSubItemActive(item.subItems);
             
+            if (hasSubItems) {
+              return (
+                <div key={item.label}>
+                  {/* 부모 메뉴 */}
+                  <button
+                    onClick={() => toggleMenu(item.label)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    )}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </div>
+                    <ChevronRight 
+                      className={cn(
+                        'h-4 w-4 transition-transform',
+                        isExpanded && 'transform rotate-90'
+                      )} 
+                    />
+                  </button>
+
+                  {/* 서브 메뉴 */}
+                  {isExpanded && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {item.subItems!.map((subItem) => {
+                        const SubIcon = subItem.icon;
+                        const isSubActive = pathname === subItem.href || pathname.startsWith(subItem.href + '/');
+                        
+                        return (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            className={cn(
+                              'flex items-center space-x-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                              isSubActive
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            )}
+                            onClick={() => setSidebarOpen(false)}
+                          >
+                            <SubIcon className="h-4 w-4" />
+                            <span>{subItem.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // 서브메뉴가 없는 일반 메뉴
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={item.href!}
                 className={cn(
                   'flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                   isActive
